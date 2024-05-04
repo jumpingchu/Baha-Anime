@@ -14,9 +14,6 @@ def get_content_soup(url):
 
 
 def get_anime_score(soup):
-    # title = soup.find("h1").text
-    # upload_time = soup.find("p", "uploadtime").text.split("：")[-1]
-    # view_count = soup.find("span", "newanime-count").find("span").text
     score = soup.find("div", "score-overall-number").text.strip(";")
     score_count = soup.find("div", "score-overall-people").text
     five_stars_ratio = soup.find("div", "scored-line").get("style").split()[-1]
@@ -26,9 +23,6 @@ def get_anime_score(soup):
     five_stars_ratio = five_stars_ratio.strip("%;")
 
     return {
-        # "title": title,
-        # "upload_time": upload_time,
-        # "view_count": view_count,
         "score": score,
         "score_count": score_count,
         "five_stars_ratio": five_stars_ratio,
