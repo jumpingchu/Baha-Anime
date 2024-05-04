@@ -37,6 +37,7 @@ column_config = {
 
 st.dataframe(
     df,
+    hide_index=True,
     width=1000,
     height=1000,
     column_config=column_config,
