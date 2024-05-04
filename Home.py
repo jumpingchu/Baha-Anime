@@ -3,6 +3,7 @@ import pandas as pd
 
 st.set_page_config(page_title="動畫評分整理", layout="wide")
 st.title("近期動畫評分")
+st.caption("取得動畫瘋近期的動畫清單，並整理評分資訊")
 
 df = pd.read_csv("data/anime_info.csv", index_col=0)
 
@@ -28,7 +29,7 @@ column_config = {
         min_value=0, max_value=100, format="%f%%"
     ),
     "評分": st.column_config.NumberColumn(
-        format="%f ⭐",
+        format="%.1f ⭐",
     ),
     "觀看人數": st.column_config.NumberColumn(
         format="%f 萬",
