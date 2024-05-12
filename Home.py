@@ -35,7 +35,7 @@ df = read_bq_table(
 df = df.rename(
     columns={
         "name": "動畫名稱",
-        "yyyymm": "上映日期",
+        "yyyymm": "上映時間",
         "episodes": "集數",
         "view_count": "觀看人數",
         "score": "評分",
@@ -59,6 +59,15 @@ column_config = {
     "觀看人數": st.column_config.NumberColumn(
         format="%f 萬",
     ),
+    "評分人數": st.column_config.NumberColumn(
+        format="%d",
+    ),
+    "集數": st.column_config.NumberColumn(
+        format="%d",
+    ),
+    "上映時間": st.column_config.DateColumn(
+        format="YYYY-MM",
+    ),
 }
 
 st.dataframe(
@@ -68,7 +77,7 @@ st.dataframe(
     height=1000,
     column_config=column_config,
     column_order=[
-        "上映日期",
+        "上映時間",
         "連結",
         "動畫名稱",
         "評分",
