@@ -1,7 +1,13 @@
+import random
 import time
-import requests
-from bs4 import BeautifulSoup
+from datetime import datetime
+
 import pandas as pd
+import pandas_gbq
+import requests
+import streamlit as st
+from bs4 import BeautifulSoup
+from google.oauth2.service_account import Credentials
 
 
 def get_content_soup(url):
@@ -56,6 +62,35 @@ def get_anime_info(anime):
     }
 
 
+def write_dataframe_to_pickle_file(dataframe):
+    dataframe.to_pickle("data/anime_info.pkl")
+    print("寫入 Pickle 完成!")
+
+
+def write_dataframe_to_bigquery(dataframe):
+    print("正在寫入 BigQuery...")
+
+    # BQ details
+    gcp_secrets = st.secrets["gcp"]
+    project_id = gcp_secrets["project_id"]
+    dataset_id = gcp_secrets["dataset_id"]
+    table_name = gcp_secrets["table_name"]
+    credentials_path = gcp_secrets["credentials_path"]
+
+    # Authenticate with the service account credentials
+    credentials = Credentials.from_service_account_file(credentials_path)
+
+    # Write the DataFrame to BigQuery
+    pandas_gbq.to_gbq(
+        dataframe,
+        f"{dataset_id}.{table_name}",
+        project_id=project_id,
+        if_exists="replace",
+        credentials=credentials,
+    )
+    print("寫入 BigQuery 完成")
+
+
 def main():
     url_pages = [1, 2]
     all_anime_list = []
@@ -63,7 +98,9 @@ def main():
         url = f"https://ani.gamer.com.tw/animeList.php?page={page}"
         anime_list = get_anime_list(url)
         all_anime_list += anime_list
-        time.sleep(2)
+        print(f"已取得第 {page} 頁 {len(all_anime_list)} 筆動畫資料")
+        sleep_seconds = random.randint(2, 3)
+        time.sleep(sleep_seconds)
 
     all_anime_info = []
     for anime in all_anime_list:
@@ -74,11 +111,15 @@ def main():
         print(anime_info)
 
         all_anime_info.append(anime_info)
-        time.sleep(1)
+        sleep_seconds = random.randint(1, 2)
+        time.sleep(sleep_seconds)
 
     df = pd.DataFrame(all_anime_info)
     df = df.sort_values(by="score", ascending=False)
-    df.to_csv("data/anime_info.csv")
+    df["created_at"] = datetime.now()
+
+    write_dataframe_to_pickle_file(df)
+    write_dataframe_to_bigquery(df)
 
 
 if __name__ == "__main__":

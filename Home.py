@@ -1,11 +1,36 @@
 import streamlit as st
-import pandas as pd
+from google.oauth2.service_account import Credentials
+from pandas_gbq import read_gbq
 
-st.set_page_config(page_title="動畫評分整理", layout="wide")
-st.title("近期動畫評分")
-st.caption("取得動畫瘋近期的動畫清單，並整理評分資訊")
+st.set_page_config(page_title="動畫瘋 - 近期動畫評分", layout="wide")
+st.title("動畫瘋 - 近期動畫評分")
 
-df = pd.read_csv("data/anime_info.csv", index_col=0)
+
+@st.cache_data(ttl=3600)
+def read_bq_table(project_id, dataset_id, table_name, _credentials_info):
+    sql = f"""
+        SELECT
+            *
+        FROM
+            `{dataset_id}.{table_name}`
+        QUALIFY 
+            RANK() OVER (PARTITION BY name ORDER BY created_at DESC) = 1
+        ORDER BY score DESC
+    """
+    credentials = Credentials.from_service_account_info(_credentials_info)
+    df = read_gbq(
+        sql, project_id=project_id, dialect="standard", credentials=credentials
+    )
+    return df
+
+
+gcp_secrets = st.secrets["gcp"]
+df = read_bq_table(
+    gcp_secrets["project_id"],
+    gcp_secrets["dataset_id"],
+    gcp_secrets["table_name"],
+    gcp_secrets,
+)
 
 df = df.rename(
     columns={
@@ -33,7 +58,7 @@ column_config = {
     ),
     "觀看人數": st.column_config.NumberColumn(
         format="%f 萬",
-    )
+    ),
 }
 
 st.dataframe(
