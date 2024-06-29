@@ -1,28 +1,8 @@
 import streamlit as st
-from google.oauth2.service_account import Credentials
-from pandas_gbq import read_gbq
+from utils import read_bq_table
 
 st.set_page_config(page_title="動畫瘋 - 近期動畫評分", layout="wide")
 st.title("動畫瘋 - 近期動畫評分")
-
-
-@st.cache_data(ttl=3600)
-def read_bq_table(project_id, dataset_id, table_name, _credentials_info):
-    sql = f"""
-        SELECT
-            *
-        FROM
-            `{dataset_id}.{table_name}`
-        QUALIFY 
-            RANK() OVER (PARTITION BY name ORDER BY created_at DESC) = 1
-        ORDER BY score DESC
-    """
-    credentials = Credentials.from_service_account_info(_credentials_info)
-    df = read_gbq(
-        sql, project_id=project_id, dialect="standard", credentials=credentials
-    )
-    return df
-
 
 gcp_secrets = st.secrets["gcp"]
 df = read_bq_table(
@@ -70,11 +50,17 @@ column_config = {
     ),
 }
 
+yyyymm_options = sorted(list(df["上映時間"].unique()), reverse=True)
+default_yyyymm = yyyymm_options[:2]
+selected_yyyymm = st.multiselect("選擇上映時間", options=yyyymm_options, default=default_yyyymm)
+if selected_yyyymm:
+    df = df[df["上映時間"].isin(selected_yyyymm)]
+
 st.dataframe(
     df,
     hide_index=True,
     width=1000,
-    height=1000,
+    # height=1000,
     column_config=column_config,
     column_order=[
         "上映時間",
