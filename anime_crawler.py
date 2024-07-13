@@ -37,22 +37,24 @@ def get_anime_score(soup):
 
 def get_anime_list(url):
     soup = get_content_soup(url)
-    anime_list = soup.find_all("a", "theme-list-main")
-    return anime_list
+    anime_in_a_tags = soup.find_all("a", "theme-list-main")
+    return anime_in_a_tags
 
 
-def get_anime_info(anime):
+def get_anime_info(anime_a_tag):
     name, yyyymm, episodes = (
-        anime.find("div", "theme-info-block").text.strip().split("\n\n")
+        anime_a_tag.find("div", "theme-info-block").text.strip().split("\n\n")
     )
-    view_count = anime.find("div", "show-view-number").find("p").text
+    view_count = anime_a_tag.find("div", "show-view-number").find("p").text
 
     # Clean strings
     yyyymm = yyyymm.strip("年份：")
     episodes = episodes.strip("共").strip("集")
-    view_count = view_count.strip("萬")
+    if "萬" in view_count:
+        view_count = float(view_count.strip("萬")) * 10000  # 2.7萬 -> 27000
+    view_count = str(view_count)
 
-    anime_url = f"https://ani.gamer.com.tw/{anime.get('href')}"
+    anime_url = f"https://ani.gamer.com.tw/{anime_a_tag.get('href')}"
     return {
         "name": name,
         "yyyymm": yyyymm,
@@ -85,26 +87,25 @@ def write_dataframe_to_bigquery(dataframe):
         dataframe,
         f"{dataset_id}.{table_name}",
         project_id=project_id,
-        if_exists="replace",
+        if_exists="append",
         credentials=credentials,
     )
     print("寫入 BigQuery 完成")
 
-
 def main():
     url_pages = [1, 2]
-    all_anime_list = []
+    all_anime_in_a_tags = []
     for page in url_pages:
         url = f"https://ani.gamer.com.tw/animeList.php?page={page}"
-        anime_list = get_anime_list(url)
-        all_anime_list += anime_list
-        print(f"已取得第 {page} 頁 {len(all_anime_list)} 筆動畫資料")
+        anime_in_a_tags = get_anime_list(url)
+        all_anime_in_a_tags += anime_in_a_tags
+        print(f"已取得第 {page} 頁 {len(all_anime_in_a_tags)} 筆動畫資料")
         sleep_seconds = random.randint(2, 3)
         time.sleep(sleep_seconds)
 
     all_anime_info = []
-    for anime in all_anime_list:
-        anime_info = get_anime_info(anime)
+    for anime_a_tag in all_anime_in_a_tags:
+        anime_info = get_anime_info(anime_a_tag)
         anime_soup = get_content_soup(anime_info["anime_url"])
         score_info = get_anime_score(anime_soup)
         anime_info.update(score_info)
