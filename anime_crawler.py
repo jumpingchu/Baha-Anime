@@ -52,7 +52,7 @@ def get_anime_info(anime_a_tag):
     episodes = episodes.strip("共").strip("集")
     if "萬" in view_count:
         view_count = float(view_count.strip("萬")) * 10000  # 2.7萬 -> 27000
-    view_count = str(view_count)
+    view_count = str(int(view_count))
 
     anime_url = f"https://ani.gamer.com.tw/{anime_a_tag.get('href')}"
     return {
